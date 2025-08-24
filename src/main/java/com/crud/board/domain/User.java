@@ -4,9 +4,11 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-
-// (1) DB 테이블과 매핑되는 클래스
-@Entity
+import jakarta.persistence.Table;
+ 
+ // (1) DB 테이블과 매핑되는 클래스
+ @Entity
+ @Table(name = "users") // 'user'는 SQL 예약어이므로 테이블명을 'users'로 지정
 public class User {
 
     // (2) 기본키(PK) 필드

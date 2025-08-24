@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>사용자 관리</title>
+    <style>
+        body { font-family: sans-serif; }
+        .container { max-width: 600px; margin: 50px auto; padding: 20px; border: 1px solid #ccc; border-radius: 10px; }
+        input[type="text"], input[type="email"] { width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; }
+        button { padding: 10px 15px; background-color: #007bff; color: white; border: none; cursor: pointer; border-radius: 5px; }
+        button:hover { background-color: #0056b3; }
+        #user-list { margin-top: 20px; }
+        .user-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+        .user-item:last-child { border-bottom: none; }
+        .user-item button { background-color: #dc3545; font-size: 12px; padding: 5px 10px;}
+        .user-item button.edit { background-color: #ffc107; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>사용자 등록</h2>
+    <form id="user-form">
+        <input type="hidden" id="user-id">
+        <input type="text" id="name" placeholder="이름" required>
+        <input type="email" id="email" placeholder="이메일" required>
+        <button type="submit">저장</button>
+    </form>
+
+    <hr style="margin-top: 30px;">
+
+    <h2>사용자 목록</h2>
+    <button onclick="getAllUsers()">목록 새로고침</button>
+    <div id="user-list"></div>
+</div>
+
+<script>
+    const userForm = document.getElementById('user-form');
+    const userIdField = document.getElementById('user-id');
+    const nameField = document.getElementById('name');
+    const emailField = document.getElementById('email');
+    const userList = document.getElementById('user-list');
+
+    // 사용자 목록 가져오기
+    async function getAllUsers() {
+        try {
+            const response = await fetch('/users');
+            if (!response.ok) {
+                throw new Error('사용자 목록을 불러오는 데 실패했습니다.');
+            }
+            const users = await response.json();
+            userList.innerHTML = ''; // 목록 초기화
+            users.forEach(user => {
+                const userItem = document.createElement('div');
+                userItem.className = 'user-item';
+                userItem.innerHTML = `
+                    <span>${user.name} (${user.email})</span>
+                    <div>
+                        <button class="edit" onclick="editUser(${user.id}, '${user.name}', '${user.email}')">수정</button>
+                        <button onclick="deleteUser(${user.id})">삭제</button>
+                    </div>
+                `;
+                userList.appendChild(userItem);
+            });
+        } catch (error) {
+            console.error(error);
+            alert(error.message);
+        }
+    }
+
+    // 사용자 생성 또는 수정
+    userForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const id = userIdField.value;
+        const name = nameField.value;
+        const email = emailField.value;
+
+        const url = id ? `/users/${id}` : '/users';
+        const method = id ? 'PUT' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name, email }),
+            });
+
+            if (!response.ok) {
+                throw new Error('사용자 저장에 실패했습니다.');
+            }
+
+            userForm.reset();
+            userIdField.value = '';
+            await getAllUsers();
+        } catch (error) {
+            console.error(error);
+            alert(error.message);
+        }
+    });
+
+    // 사용자 삭제
+    async function deleteUser(id) {
+        if (!confirm('정말로 삭제하시겠습니까?')) {
+            return;
+        }
+        try {
+            const response = await fetch(`/users/${id}`, {
+                method: 'DELETE',
+            });
+            if (!response.ok) {
+                throw new Error('사용자 삭제에 실패했습니다.');
+            }
+            await getAllUsers();
+        } catch (error) {
+            console.error(error);
+            alert(error.message);
+        }
+    }
+
+    // 수정 폼 채우기
+    function editUser(id, name, email) {
+        userIdField.value = id;
+        nameField.value = name;
+        emailField.value = email;
+        window.scrollTo(0, 0); // 페이지 상단으로 스크롤
+    }
+
+
+    // 페이지 로드 시 사용자 목록 자동 로드
+    window.onload = getAllUsers;
+</script>
+
+</body>
+</html>
